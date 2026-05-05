@@ -44,6 +44,36 @@
             color: #e94560;
             font-weight: bold;
         }
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .speed-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            border-radius: 4px;
+            background: #e94560;
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .speed-btn:hover {
+            background: #ff6b6b;
+            transform: scale(1.1);
+        }
+        .speed-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .speed-display {
+            min-width: 24px;
+            text-align: center;
+        }
         canvas {
             border: 3px solid #e94560;
             border-radius: 5px;
@@ -106,6 +136,12 @@
             <div class="info-item">得分: <span id="score">0</span></div>
             <div class="info-item">关卡: <span id="level">1</span></div>
             <div class="info-item">敌人: <span id="enemies">0</span></div>
+            <div class="info-item speed-control">
+                速度:
+                <button class="speed-btn" id="speedDown">-</button>
+                <span class="speed-display" id="speedDisplay">4</span>
+                <button class="speed-btn" id="speedUp">+</button>
+            </div>
         </div>
         <canvas id="gameCanvas" width="640" height="640"></canvas>
         <div class="controls">
@@ -133,8 +169,14 @@
             paused: false,
             score: 0,
             lives: 3,
-            level: 1
+            level: 1,
+            speed: 4  // 默认速度4 (0-9)
         };
+
+        // 速度倍率映射 (速度0最慢，速度9最快)
+        function getSpeedMultiplier() {
+            return 0.2 + gameState.speed * 0.2;  // 0.2 到 2.0
+        }
 
         // 玩家坦克
         class Tank {
@@ -145,11 +187,15 @@
                 this.height = TILE_SIZE - 4;
                 this.color = color;
                 this.direction = 'up';
-                this.speed = isPlayer ? 3 : 1.5;
+                this.baseSpeed = isPlayer ? 3 : 1.5;
                 this.isPlayer = isPlayer;
                 this.lastShot = 0;
                 this.shootDelay = isPlayer ? 300 : 1000;
                 this.alive = true;
+            }
+
+            get speed() {
+                return this.baseSpeed * getSpeedMultiplier();
             }
 
             draw() {
@@ -245,9 +291,13 @@
                 this.width = 8;
                 this.height = 8;
                 this.direction = direction;
-                this.speed = 6;
+                this.baseSpeed = 6;
                 this.isPlayerBullet = isPlayerBullet;
                 this.active = true;
+            }
+
+            get speed() {
+                return this.baseSpeed * getSpeedMultiplier();
             }
 
             draw() {
@@ -645,6 +695,34 @@
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('startBtn').click();
         });
+
+        // 速度控制
+        const speedDisplay = document.getElementById('speedDisplay');
+        const speedDown = document.getElementById('speedDown');
+        const speedUp = document.getElementById('speedUp');
+
+        function updateSpeedDisplay() {
+            speedDisplay.textContent = gameState.speed;
+            speedDown.disabled = gameState.speed <= 0;
+            speedUp.disabled = gameState.speed >= 9;
+        }
+
+        speedDown.addEventListener('click', () => {
+            if (gameState.speed > 0) {
+                gameState.speed--;
+                updateSpeedDisplay();
+            }
+        });
+
+        speedUp.addEventListener('click', () => {
+            if (gameState.speed < 9) {
+                gameState.speed++;
+                updateSpeedDisplay();
+            }
+        });
+
+        // 初始化速度显示
+        updateSpeedDisplay();
 
         // 初始绘制
         drawBackground();
